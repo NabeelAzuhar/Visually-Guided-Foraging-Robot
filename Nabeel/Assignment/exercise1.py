@@ -9,13 +9,13 @@ servo = Servo()
 servo.soft_reset()
 
 thresholds = [
-#              (60, 75, -35, -10, 5, 30), # Dark green
-              (65, 75, -25, 0, -20, 5), # Blue
-              (80, 100, -25, 0, 35, 50), # Yellow
+              (65, 75, -20, -10, 10, 20), # Dark green
+              (75, 85, -19, -7, -19, -7), # Blue
+              (85, 95, -15, -5, 30, 40), # Yellow
 #              (45, 55, 40, 55, 15, 35), # Red
 ]
 
-colour_names = ['blue', 'yellow']
+colour_names = ['dark green', 'blue', 'yellow']
 camera = Cam(thresholds)
 
 # Test your assignment code here. Think about how you might want to adjust the steering based on the position of
@@ -43,11 +43,14 @@ try:
                     direction = abs(blobs[0].cx() - (img.width() / 2)) / (img.width() / 2)
                     if  direction < 0.1:
                         print('direction good')
-                        servo.set_speed(0, 0)
+                        servo.set_speed(0.1, 0.1)
+                        time.sleep_ms(1000)
                         searching = False
                         continue
             # If blob not found or not central, spin
             servo.set_speed(0, 0.1)
+
+
 
         # Move to found colour
         while not searching:
