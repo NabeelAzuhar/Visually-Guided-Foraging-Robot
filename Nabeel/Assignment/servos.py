@@ -15,7 +15,7 @@ class Servo:
         self.pan_angle_corr = 0
         self.left_zero = 0.05
         self.right_zero = -0.1
-        
+
         # Define servo pin IDs for the servo shield.
         self.pan_id = 7
         self.left_id = 5
