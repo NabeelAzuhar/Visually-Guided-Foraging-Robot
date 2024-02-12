@@ -9,10 +9,10 @@ servo = Servo()
 servo.soft_reset()
 
 thresholds = [
-              (65, 95, -30, -5, 15, 40), # Light green
-              (25, 35, -15, 10, -30, -10), # Blue
-              (68, 80, -30, 0, 40, 60), # Yellow
-              (45, 55, 40, 55, 15, 35), # Red
+              (60, 75, -35, -10, 5, 30), # Dark green
+              (65, 75, -25, 0, -20, 5), # Blue
+              (80, 100, -25, 0, 35, 50), # Yellow
+#              (45, 55, 40, 55, 15, 35), # Red
 ]
 camera = Cam(thresholds)
 
@@ -21,6 +21,7 @@ camera = Cam(thresholds)
 # of the camera? What would your bot do if the colour target is lost for a single frame? Some helpful functions are:
 
 ####################################################################################################
+set_speed(0.1, 0.1)
 start = time.time()
 try:
     for idx, color_threshold in enumerate(thresholds):
@@ -45,7 +46,7 @@ try:
                         searching = False
                         continue
             # If blob not found or not central, spin
-            servo.set_speed(0.25, -0.25)
+            servo.set_speed(0, 0.05)
 
         # Move to found colour
         while not searching:
@@ -56,7 +57,7 @@ try:
                 found_idx = camera.find_blob(blobs, idx)
                 # If blob still in camera, move towards it
                 if found_idx is not None:
-                    servo.set_speed(0.5, 0.5)
+                    servo.set_speed(0.1, 0.1)
                     continue
             # If blob not in camera, stop
             servo.set_speed(0, 0)
