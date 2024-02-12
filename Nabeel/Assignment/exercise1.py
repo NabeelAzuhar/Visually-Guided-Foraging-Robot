@@ -9,11 +9,13 @@ servo = Servo()
 servo.soft_reset()
 
 thresholds = [
-              (60, 75, -35, -10, 5, 30), # Dark green
+#              (60, 75, -35, -10, 5, 30), # Dark green
               (65, 75, -25, 0, -20, 5), # Blue
               (80, 100, -25, 0, 35, 50), # Yellow
 #              (45, 55, 40, 55, 15, 35), # Red
 ]
+
+colour_names = ['blue', 'yellow']
 camera = Cam(thresholds)
 
 # Test your assignment code here. Think about how you might want to adjust the steering based on the position of
@@ -21,7 +23,7 @@ camera = Cam(thresholds)
 # of the camera? What would your bot do if the colour target is lost for a single frame? Some helpful functions are:
 
 ####################################################################################################
-set_speed(0.1, 0.1)
+#servo.set_speed(0.1, 0.1)
 start = time.time()
 try:
     for idx, color_threshold in enumerate(thresholds):
@@ -37,8 +39,7 @@ try:
                 found_idx = camera.find_blob(blobs, idx)
                 # If blob found, stop spinning
                 if found_idx is not None:
-                    print('Found something!')
-                    print(blobs)
+                    print('Found this colour:', colour_names[idx])
                     direction = abs(blobs[0].cx() - (img.width() / 2)) / (img.width() / 2)
                     if  direction < 0.1:
                         print('direction good')
@@ -46,7 +47,7 @@ try:
                         searching = False
                         continue
             # If blob not found or not central, spin
-            servo.set_speed(0, 0.05)
+            servo.set_speed(0, 0.1)
 
         # Move to found colour
         while not searching:
