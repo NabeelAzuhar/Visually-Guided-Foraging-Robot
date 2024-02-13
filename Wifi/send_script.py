@@ -18,6 +18,7 @@ def send_script_to_openmv(script_path, ip, port):
 # Usage
 openmv_ip = '192.168.4.1'  # Replace with your OpenMV camera's IP address
 openmv_port = 8080         # Replace with the port you've set for script execution
-script_path = r'C:\Users\Nabee\Desktop\Visually_Guided_Foraging_Robot\Nabeel\Assignment\exercise1.py'  # Path to the Python script you want to send
+script_path = r'C:\Users\Nabee\Desktop\Visually_Guided_Foraging_Robot\Nabeel\Assignment\task.py'  # Path to the Python script you want to send
 
+print('sending')
 send_script_to_openmv(script_path, openmv_ip, openmv_port)

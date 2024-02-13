@@ -151,7 +151,7 @@ if __name__ == "__main__":
     # Color Tracking Thresholds (L Min, L Max, A Min, A Max, B Min, B Max)
     # The below thresholds track in general red/green things. You may wish to tune them...
     thresholds = [
-        (15, 30, 10, 32, 20, 40), # Orange
+        (65, 75, -20, -10, 10, 20), # Dark Green
     ]
 
 
