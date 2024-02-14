@@ -9,41 +9,21 @@ led.on()
 servo = Servo()
 servo.soft_reset()
 
-dg_l = 35
-dg_a = -22
-dg_b = 19
-b_l = 44
-b_a = -12
-b_b = -21
-y_l = 74
-y_a = -12
-y_b = 47
-r_l = 55
-r_a = 35
-r_b = 23
-p_l = 26
-p_a = 20
-p_b = -2
-o_l = 70
-o_a = 12
-o_b = 38
-lg_l = 50
-lg_a = -21
-lg_b = 30
+dg = [19, -21, 19]
+b = [23, -5, -19]
+y = [51, -11, 47]
+r = [23, 30, 23]
+p = [18, 9, 4]
+o = [36, 10, 38]
+lg = [47, -21, 32]
 
-
-thresholds = [
-              (dg_l - 6, dg_l + 6, dg_a - 6, dg_a + 6, dg_b - 6, dg_b + 6), # Dark green
-              (b_l - 6, b_l + 6, b_a - 6, b_a + 6, b_b - 6, b_b + 6), # Blue
-              (y_l - 6, y_l + 6, y_a - 6, y_a + 6, y_b - 6, y_b + 6), # Yellow
-              (r_l - 6, r_l + 6, r_a - 6, r_a + 6, r_b - 6, r_b + 6), # Red
-              (p_l - 6, p_l + 6, p_a - 6, p_a + 6, p_b - 6, p_b + 6), # Purple
-              (o_l - 6, o_l + 6, o_a - 6, o_a + 6, o_b - 6, o_b + 6), # Orange
-              (lg_l - 6, lg_l + 6, lg_a - 6, lg_a + 6, lg_b - 6, lg_b + 6), # Light Green
-              ]
+thresholds = []
+colours = [dg, b, y, r, p, o, lg]
+for colour in colours:
+    thresholds.append((colour[0]-7, colour[0]+7, colour[1]-7, colour[1]+7, colour[2]-7, colour[2]+7))
 
 colour_names = ['dark_green', 'blue', 'yellow', 'red', 'purple', 'orange', 'light green']
-camera = Cam(thresholds, 5)
+camera = Cam(thresholds, 20)
 
 # Test your assignment code here. Think about how you might want to adjust the steering based on the position of
 # the colour targets in the image. What should the bot do if the next colour target is outside the field of view
@@ -51,12 +31,9 @@ camera = Cam(thresholds, 5)
 
 ####################################################################################################
 ### The Exercise
-servo.set_angle(0)
-#servo.set_speed(-0.1, -0.1)
-time.sleep_ms(100)
 start = time.time()
-duration = 90
-direction_threshold = 0.15
+duration = 120
+direction_threshold = 0.1
 try:
     for idx, color_threshold in enumerate(thresholds):
         print('Looking for blob:', idx)
@@ -84,16 +61,16 @@ try:
                 # If blob found, stop spinning
                 if found_idx is not None:
                     print('Found this colour:', colour_names[idx])
-                    direction = abs(blobs[0].cx() - (img.width() / 2)) / (img.width() / 2)
+                    direction = blobs[found_idx].cx() / img.width()
                     print('direction: ', direction)
-                    if direction < direction_threshold:
+                    if direction < 0.5 + direction_threshold and direction > 0.5 - direction_threshold:
                         print('direction good')
-                        servo.set_differential_drive(0.3, 0)
+                        servo.set_differential_drive(0.5, -0.2)
                         searching = False
                         continue
             # If blob not found or not central, spin
-            servo.set_differential_drive(0.05, 0.8)
-            time.sleep_ms(100)
+            servo.set_differential_drive(0.1, 0.8)
+            time.sleep_ms(150)
             servo.set_differential_drive(0, 0)
 
         frames_unseen_count = 0
@@ -109,11 +86,12 @@ try:
             # Stop and start looking for next colour when blob isnt seen for 10 frames
             frames_unseen_count += 1
             if frames_unseen_count > 7:
-                if idx == 5:
-                    servo.set_differential_drive(0.1, 0)
-                    time.sleep_ms(1000)
                 servo.set_differential_drive(0, 0)
                 time.sleep_ms(1000)
+                if idx == 4 or idx == 5:
+                    servo.set_differential_drive(0.3, -0.2)
+                    time.sleep_ms(1000)
+                    servo.set_differential_drive(0, 0)
                 break
 
         if time.time() - start > duration:

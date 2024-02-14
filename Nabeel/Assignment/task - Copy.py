@@ -9,27 +9,27 @@ led.on()
 servo = Servo()
 servo.soft_reset()
 
-dg_l = 35
-dg_a = -22
-dg_b = 19
-b_l = 44
-b_a = -12
-b_b = -21
-y_l = 74
-y_a = -12
-y_b = 47
-r_l = 55
+dg_l = 29
+dg_a = -23
+dg_b = 21
+b_l = 33
+b_a = -11
+b_b = -19
+y_l = 75
+y_a = -11
+y_b = 46
+r_l = 37
 r_a = 35
-r_b = 23
-p_l = 26
-p_a = 20
-p_b = -2
-o_l = 70
-o_a = 12
-o_b = 38
-lg_l = 50
-lg_a = -21
-lg_b = 30
+r_b = 32
+p_l = 17
+p_a = 14
+p_b = 2
+o_l = 53
+o_a = 15
+o_b = 40
+lg_l = 47
+lg_a = -20
+lg_b = 35
 
 
 thresholds = [
@@ -43,7 +43,7 @@ thresholds = [
               ]
 
 colour_names = ['dark_green', 'blue', 'yellow', 'red', 'purple', 'orange', 'light green']
-camera = Cam(thresholds, 5)
+camera = Cam(thresholds, 8)
 
 # Test your assignment code here. Think about how you might want to adjust the steering based on the position of
 # the colour targets in the image. What should the bot do if the next colour target is outside the field of view
@@ -51,34 +51,33 @@ camera = Cam(thresholds, 5)
 
 ####################################################################################################
 ### The Exercise
-try:
-    for idx, color_threshold in enumerate(thresholds):
-        searching = True
-        while searching:
-            blobs, img = camera.get_blobs_bottom()
-            if blobs:
-                found_idx = camera.find_blob(blobs, idx)
-                if found_idx is not None:
-                    if abs(blobs[0].cx() - (img.width() / 2)) / (img.width() / 2) < 0.15:
-                        servo.set_differential_drive(0.5, -0.1)
-                        searching = False
-                        continue
-            servo.set_differential_drive(0.1, 0.8)
-            time.sleep_ms(100)
-            servo.set_differential_drive(0, 0)
-        frames_unseen_count = 0
-        while True:
-            blobs, img = camera.get_blobs_bottom()
-            if blobs:
-                found_idx = camera.find_blob(blobs, idx)
-                if found_idx is not None:
+for idx, color_threshold in enumerate(thresholds):
+    searching = True
+    while searching:
+        blobs, img = camera.get_blobs_bottom()
+        if blobs:
+            found_idx = camera.find_blob(blobs, idx)
+            if found_idx is not None:
+                if abs(blobs[0].cx() - (img.width() / 2)) / (img.width() / 2) < 0.1:
+                    servo.set_differential_drive(0.5, -0.1)
+                    searching = False
                     continue
-            frames_unseen_count += 1
-            if frames_unseen_count > 7:
-                if idx == 4 or idx == 5:
-                    servo.set_differential_drive(0.3, -0.1)
-                    time.sleep_ms(1000)
-                servo.set_differential_drive(0, 0)
+        servo.set_differential_drive(0.1, 0.8)
+        time.sleep_ms(100)
+        servo.set_differential_drive(0, 0)
+    frames_unseen_count = 0
+    while True:
+        blobs, img = camera.get_blobs_bottom()
+        if blobs:
+            found_idx = camera.find_blob(blobs, idx)
+            if found_idx is not None:
+                continue
+        frames_unseen_count += 1
+        if frames_unseen_count > 7:
+            if idx == 4 or idx == 5:
+                servo.set_differential_drive(0.2, -0.1)
                 time.sleep_ms(1000)
-                break
+            servo.set_differential_drive(0, 0)
+            time.sleep_ms(1000)
+            break
 
