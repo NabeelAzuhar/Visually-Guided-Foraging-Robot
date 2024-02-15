@@ -1,0 +1,70 @@
+from servos import *
+from camera import *
+from machine import LED
+
+led = LED("LED_BLUE")
+led.on()
+
+servo = Servo()
+servo.soft_reset()
+
+thresholds = [
+              (20, 36, -28, -14, 9, 26),
+              (17, 45, -23, 1, -28, -8),
+              (62, 79, -21, 1, 27, 53),
+              (40, 48, 18, 40, 12, 47),
+]
+camera = Cam(thresholds, 24)
+
+# Test your assignment code here. Think about how you might want to adjust the steering based on the position of
+# the colour targets in the image. What should the bot do if the next colour target is outside the field of view
+# of the camera? What would your bot do if the colour target is lost for a single frame? Some helpful functions are:
+# camera.get_blobs_bottom()
+# camera.find_blobs()
+# servos.set_differential_drive()
+
+servo.set_angle(0)
+dir_thresh = 0.1
+
+for i in range(len(thresholds)):
+    searching = True
+    while searching:
+        blobs, img = camera.get_blobs_bottom()
+        fi = camera.find_blob(blobs, i)
+        if fi is not None:
+            servo.set_differential_drive(0.1, 0.8)
+            time.sleep_ms(200)
+            servo.set_differential_drive(0, 0)
+        else:
+            searching = False
+    c = 0
+    while not searching:
+        blobs, img = camera.get_blobs_bottom()
+        fi = camera.find_blob(blobs, i)
+        if fi is not None:
+            direction = blobs[fi].cx() / img.width()
+            if direction > 0.5 + dir_thresh:
+                servo.set_differential_drive(0.05, -0.8)
+                time.sleep_ms(50)
+                servo.set_differential_drive(0, 0)
+            elif direction < 0.5 - dir_thresh:
+                servo.set_differential_drive(0.05, 0.8)
+                time.sleep_ms(50)
+                servo.set_differential_drive(0, 0)
+            else:
+                servo.set_differential_drive(0.2, 0)
+                time.sleep_ms(200)
+                servo.set_differential_drive(0, 0)
+        else:
+            c += 1
+            if c > 5:
+                servo.set_differential_drive(0.2, 0)
+                time.sleep_ms(300)
+                servo.set_differential_drive(0, 0)
+                if i in (4,5):
+                    servo.set_differential_drive(0.2, 0)
+                    time.sleep_ms(300)
+                    servo.set_differential_drive(0, 0)
+                break
+
+servo.soft_reset()

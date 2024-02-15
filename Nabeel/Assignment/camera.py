@@ -145,14 +145,23 @@ if __name__ == "__main__":
     sensor.set_auto_whitebal(False)  # must be turned off for colour tracking
 
     # Change gain here to work with the lighting conditions you have
-    sensor.set_auto_gain(False, gain_db = 20)  # must be turned off for color tracking
+    sensor.set_auto_gain(False, gain_db = 24)  # must be turned off for color tracking
     #
 
     # Color Tracking Thresholds (L Min, L Max, A Min, A Max, B Min, B Max)
     # The below thresholds track in general red/green things. You may wish to tune them...
-    thresholds = [
-        (65, 75, -20, -10, 10, 20), # Dark Green
-    ]
+    dg = [28, -18, 11]
+    b = [39, -9, -23]
+    y = [74, -8, 35]
+    r = [52, 36, 20]
+    p = [32, 17, -6]
+    o = [65, 11, 35]
+    lg = [57, -20, 23]
+
+    thresholds = []
+    colours = [dg, b, y, r, p, o, lg]
+    for colour in colours:
+        thresholds.append((colour[0]-6, colour[0]+6, colour[1]-6, colour[1]+6, colour[2]-6, colour[2]+6))
 
 
     # Only blobs that with more pixels than "pixel_threshold" and more area than "area_threshold" are
@@ -160,21 +169,16 @@ if __name__ == "__main__":
     # blobs (x, y, width, height). Currently set to look for blobs in the bottom 2/3 of the image.
     while True:
         img = sensor.snapshot()
-        for blob in img.find_blobs(thresholds, pixels_threshold=150, area_threshold=150,
-                                   roi=(1,int(sensor.height()/3),int(sensor.width()),int(2*sensor.height()/3))):
-            img.draw_rectangle(blob.rect())
+        print(sensor.width())
+#        for blob in img.find_blobs(thresholds, pixels_threshold=150, area_threshold=150,
+#                                   roi=(1,int(sensor.height()/3),int(sensor.width()),int(2*sensor.height()/3))):
+#            img.draw_rectangle(blob.rect())
 
-    # Try uncommenting these lines to see what happens
-    #        if blob.elongation() > 0.5:
-    #            img.draw_edges(blob.min_corners(), color=(255, 0, 0))
-    #            img.draw_line(blob.major_axis_line(), color=(0, 255, 0))
-    #            img.draw_line(blob.minor_axis_line(), color=(0, 0, 255))
-    #
-
-    # Try uncommenting these lines to see what happens
-    #        img.draw_cross(blob.cx(), blob.cy())
-    #        # Note - the blob rotation is unique to 0-180 only.
-    #        img.draw_keypoints(
-    #            [(blob.cx(), blob.cy(), int(math.degrees(blob.rotation())))], size=20
-    #        )
-    #
+#            if blob.elongation() > 0.5:
+#                img.draw_edges(blob.min_corners(), color=(255, 0, 0))
+#                img.draw_line(blob.major_axis_line(), color=(0, 255, 0))
+#                img.draw_line(blob.minor_axis_line(), color=(0, 0, 255))
+#            img.draw_cross(blob.cx(), blob.cy())
+#            img.draw_keypoints(
+#                [(blob.cx(), blob.cy(), int(math.degrees(blob.rotation())))], size=20
+#            )
