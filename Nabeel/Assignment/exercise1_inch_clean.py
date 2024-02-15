@@ -23,17 +23,17 @@ servo.soft_reset()
 #    thresholds.append((colour[0]-6, colour[0]+6, colour[1]-6, colour[1]+6, colour[2]-6, colour[2]+6))
 
 thresholds = [
-              (20, 36, -28, -14, 9, 26),
-              (17, 45, -23, 1, -28, -8),
-              (62, 79, -21, 1, 27, 53),
-              (40, 48, 18, 40, 12, 47),
-              (28, 43, 8, 22, -1, 24),
-              (57, 72, -5, 15, 31, 51),
-              (63, 72, -25, -10, 19, 42),
+              (32, 41, -30, -20, 16, 27),
+              (46, 61, -25, 1, -29, -12),
+              (81, 95, -25, 1, 21, 54),
+              (58, 72, 12, 31, 15, 45),
+              (36, 46, 7, 26, -10, 17),
+              (67, 84, -13, 8, 23, 51),
+              (75, 87, -27, -4, 20, 49),
               ]
 
 colour_names = ['dark_green', 'blue', 'yellow', 'red', 'purple', 'orange', 'light green']
-camera = Cam(thresholds, 24)
+camera = Cam(thresholds, 35)
 
 ####################################################################################################
 ### The Exercise
@@ -63,18 +63,18 @@ for idx in range(len(thresholds)):
                 servo.set_differential_drive(0.05, 0.8) ##
                 time.sleep_ms(50)
             else:
-                servo.set_differential_drive(0.2, 0) ##
+                servo.set_differential_drive(0.2, 0.2) ##
                 time.sleep_ms(300)
             servo.set_differential_drive(0, 0)
         else:
             count += 1
             if count > 5:
-                servo.set_differential_drive(0.2, 0) ##
+                servo.set_differential_drive(0.2, 0.2) ##
                 time.sleep_ms(300)
                 servo.set_differential_drive(0, 0)
                 time.sleep_ms(1500)
                 if idx == 4 or idx == 5:
-                    servo.set_differential_drive(0.2, 0) ##
+                    servo.set_differential_drive(0.2, -0.1) ##
                     time.sleep_ms(500)
                     servo.set_differential_drive(0, 0)
                 break

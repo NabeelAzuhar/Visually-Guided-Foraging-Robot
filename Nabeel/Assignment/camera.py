@@ -145,7 +145,7 @@ if __name__ == "__main__":
     sensor.set_auto_whitebal(False)  # must be turned off for colour tracking
 
     # Change gain here to work with the lighting conditions you have
-    sensor.set_auto_gain(False, gain_db = 24)  # must be turned off for color tracking
+    sensor.set_auto_gain(False, gain_db = 35)  # must be turned off for color tracking
     #
 
     # Color Tracking Thresholds (L Min, L Max, A Min, A Max, B Min, B Max)
