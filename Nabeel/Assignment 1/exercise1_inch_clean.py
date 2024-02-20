@@ -64,18 +64,17 @@ for idx in range(len(thresholds)):
                 time.sleep_ms(50)
             else:
                 servo.set_differential_drive(0.2, 0.2) ##
-                time.sleep_ms(300)
+                time.sleep_ms(200)
             servo.set_differential_drive(0, 0)
         else:
             count += 1
             if count > 5:
                 servo.set_differential_drive(0.2, 0.2) ##
-                time.sleep_ms(300)
+                time.sleep_ms(200)
                 servo.set_differential_drive(0, 0)
-                time.sleep_ms(1500)
                 if idx == 4 or idx == 5:
                     servo.set_differential_drive(0.2, -0.1) ##
-                    time.sleep_ms(500)
+                    time.sleep_ms(200)
                     servo.set_differential_drive(0, 0)
                 break
 

@@ -9,12 +9,15 @@ servo = Servo()
 servo.soft_reset()
 
 thresholds = [
-              (20, 36, -28, -14, 9, 26),
-              (17, 45, -23, 1, -28, -8),
-              (62, 79, -21, 1, 27, 53),
-              (40, 48, 18, 40, 12, 47),
-]
-camera = Cam(thresholds, 24)
+              (32, 41, -30, -20, 16, 27),
+              (46, 61, -25, 1, -29, -12),
+              (81, 95, -25, 1, 21, 54),
+              (58, 72, 12, 31, 15, 45),
+              (36, 46, 7, 26, -10, 17),
+              (67, 84, -13, 8, 23, 51),
+              (75, 87, -27, -4, 20, 49),
+              ]
+camera = Cam(thresholds, 35)
 
 # Test your assignment code here. Think about how you might want to adjust the steering based on the position of
 # the colour targets in the image. What should the bot do if the next colour target is outside the field of view
@@ -23,37 +26,51 @@ camera = Cam(thresholds, 24)
 # camera.find_blobs()
 # servos.set_differential_drive()
 
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 servo.set_angle(0)
-dir_thresh = 0.1
+t = 0.1
 
 for i in range(len(thresholds)):
-    searching = True
-    while searching:
+    s = True
+    while s:
         blobs, img = camera.get_blobs_bottom()
         fi = camera.find_blob(blobs, i)
-        if fi is not None:
-            servo.set_differential_drive(0.1, 0.8)
-            time.sleep_ms(200)
+        if fi is None:
+            servo.set_differential_drive(0.2, 0.8)
+            time.sleep_ms(150)
             servo.set_differential_drive(0, 0)
         else:
-            searching = False
+            s = False
     c = 0
-    while not searching:
+    while not s:
         blobs, img = camera.get_blobs_bottom()
         fi = camera.find_blob(blobs, i)
         if fi is not None:
             direction = blobs[fi].cx() / img.width()
-            if direction > 0.5 + dir_thresh:
+            if direction > 0.5 + t:
                 servo.set_differential_drive(0.05, -0.8)
                 time.sleep_ms(50)
                 servo.set_differential_drive(0, 0)
-            elif direction < 0.5 - dir_thresh:
+            elif direction < 0.5 - t:
                 servo.set_differential_drive(0.05, 0.8)
                 time.sleep_ms(50)
                 servo.set_differential_drive(0, 0)
             else:
                 servo.set_differential_drive(0.2, 0)
-                time.sleep_ms(200)
+                time.sleep_ms(300)
                 servo.set_differential_drive(0, 0)
         else:
             c += 1
@@ -63,8 +80,10 @@ for i in range(len(thresholds)):
                 servo.set_differential_drive(0, 0)
                 if i in (4,5):
                     servo.set_differential_drive(0.2, 0)
-                    time.sleep_ms(300)
+                    time.sleep_ms(500)
                     servo.set_differential_drive(0, 0)
                 break
+
+
 
 servo.soft_reset()
