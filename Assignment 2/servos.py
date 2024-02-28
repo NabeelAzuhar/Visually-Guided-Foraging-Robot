@@ -204,7 +204,7 @@ if __name__ == "__main__":
 #        time.sleep_ms(20)
 
     servo.set_angle(0)
-    servo.set_differential_drive(0.1, 0.3)
+    servo.set_differential_drive(0.1, 0)
     time.sleep_ms(2000)
 
 #    servo.set_differential_drive(0.5, 0)

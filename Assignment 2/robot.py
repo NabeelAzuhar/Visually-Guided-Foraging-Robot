@@ -4,6 +4,7 @@ from pid_control import PID
 import time
 import math
 import sensor
+#import numpy as np
 
 class Robot(object):
     """
@@ -26,12 +27,17 @@ class Robot(object):
         self.servo.soft_reset()
         self.cam = Cam(thresholds, gain)
         self.PID = PID(p, i, d, imax)
+        self.thresholds = thresholds
 
         # Blob IDs
         self.mid_line_id = 0
         self.obstacle_id = 1
         self.l_line_id = 2
         self.r_line_id = 3
+
+        # Alignment
+        self.adherance = 0.1
+        self.drive_factor = 1.75
 
         self.scan_direction = 1
 
@@ -59,34 +65,38 @@ class Robot(object):
             if biggest_blob_color == pow(2, 0):
                 color_id = self.mid_line_id
                 break
-            elif biggest_blob_color == pow(2, 2):
-                color_id = self.l_line_id
-                break
-            elif biggest_blob_color == pow(2, 3):
-                color_id = self.r_line_id
-                break
 
         print('color detected', color_id)
 
         # Following the lane
         while True:
             blobs, img = self.cam.get_blobs_bottom()
+            for blob in img.find_blobs(self.thresholds, pixels_threshold=150, area_threshold=150,
+                                       roi=(1,int(sensor.height()/3),int(sensor.width()),int(2*sensor.height()/3))):
+                img.draw_rectangle(blob.rect())
+
+                if blob.elongation() > 0.5:
+                    img.draw_edges(blob.min_corners(), color=(255, 0, 0))
+                    img.draw_line(blob.major_axis_line(), color=(0, 255, 0))
+                    img.draw_line(blob.minor_axis_line(), color=(0, 0, 255))
+                img.draw_cross(blob.cx(), blob.cy())
+                img.draw_keypoints(
+                    [(blob.cx(), blob.cy(), int(math.degrees(blob.rotation())))], size=20
+                )
             print('finding blobs of color', color_id)
             found_mid = self.cam.find_blob(blobs, color_id)
 
             if found_mid is not None:
-
-                # Level 1
-                print('found mid')
+                print('found lane')
                 self.servo.set_angle(0)
                 pixel_error = blobs[found_mid].cx() - self.cam.w_centre
                 steering = pixel_error / self.cam.w_centre
-                steering = steering / 2
-                print('steering', steering, 'drive:', steering + bias)
-                if steering < 0.2 and steering > 0:
+                drive = steering / self.drive_factor
+                print('steering', steering, 'drive:', bias - drive)
+                if steering < self.adherance and steering > -self.adherance:
                     self.drive(speed, bias)
                 else:
-                    self.drive(speed, bias - steering)
+                    self.drive(speed, bias - drive)
             else:
                 frames += 1
                 if frames > 5:
@@ -108,7 +118,6 @@ class Robot(object):
 
         time.sleep_ms(1000)
         print('starting stage 2')
-        frames = 0
 
         # Find the initial lane to follow
         while True:
@@ -121,18 +130,24 @@ class Robot(object):
             if biggest_blob_color == pow(2, 0):
                 color_id = self.mid_line_id
                 break
-            elif biggest_blob_color == pow(2, 2):
-                color_id = self.l_line_id
-                break
-            elif biggest_blob_color == pow(2, 3):
-                color_id = self.r_line_id
-                break
 
         print('lane color detected', color_id)
 
         # Following the lane
         while True:
             blobs, img = self.cam.get_blobs_bottom()
+            for blob in img.find_blobs(self.thresholds, pixels_threshold=150, area_threshold=150,
+                                       roi=(1,int(sensor.height()/3),int(sensor.width()),int(2*sensor.height()/3))):
+                img.draw_rectangle(blob.rect())
+
+                if blob.elongation() > 0.5:
+                    img.draw_edges(blob.min_corners(), color=(255, 0, 0))
+                    img.draw_line(blob.major_axis_line(), color=(0, 255, 0))
+                    img.draw_line(blob.minor_axis_line(), color=(0, 0, 255))
+                img.draw_cross(blob.cx(), blob.cy())
+                img.draw_keypoints(
+                    [(blob.cx(), blob.cy(), int(math.degrees(blob.rotation())))], size=20
+                )
             print('finding blobs of color', color_id)
             found_mid = self.cam.find_blob(blobs, color_id)
             obstacle_detected = self.cam.find_blob(blobs, self.obstacle_id)
@@ -140,41 +155,214 @@ class Robot(object):
             # If obstacle not there, follow lane
             if obstacle_detected is None:
                 if found_mid is not None:
-                    print('following lane')
+                    print('found lane')
                     self.servo.set_angle(0)
                     pixel_error = blobs[found_mid].cx() - self.cam.w_centre
                     steering = pixel_error / self.cam.w_centre
-                    steering = steering / 2
-                    print('steering', steering, 'drive:', steering + bias)
-                    if steering < 0.2 and steering > 0:
+                    drive = steering / self.drive_factor
+                    print('steering', steering, 'drive:', bias - drive)
+                    if steering < self.adherance and steering > -self.adherance:
                         self.drive(speed, bias)
                     else:
-                        self.drive(speed, bias - steering)
+                        self.drive(speed, bias - drive)
             # If obstacle, stop
-            else:
+            if obstacle_detected is not None:
                 print('OBSTACLE!!')
                 self.drive(0, 0)
                 break
+
+        self.servo.soft_reset()
         return
 
 
-    def stage3(self, speed: float, bias: float) -> None:
+    def stage3(self, speed: float, bias: float, distance_threshold: float) -> None:
         """
         Obstacle distance algorithm - write your own method!
 
         Args:
             speed (float): Speed to set the servos to (-1~1)
             bias (float): Just an example of other arguments you can add to the function!
+            obstacle_size (float): height of object (cm)
+            distance_threshold (float): how far from the object the robot should stop
         """
-        self.servo.soft_reset()
 
+        self.servo.set_angle(0)
+        time.sleep_ms(1000)
+        print('starting stage 3')
+
+        # Find the initial lane to follow
         while True:
             blobs, img = self.cam.get_blobs_bottom()
+            biggest_blob = self.cam.get_biggest_blob(blobs)
+            biggest_blob_color = biggest_blob[8]
+
+            print('check color')
+
+            if biggest_blob_color == pow(2, 0):
+                color_id = self.mid_line_id
+                break
+
+        print('lane color detected', color_id)
+
+        # Following the lane
+        while True:
+            blobs, img = self.cam.get_blobs_bottom()
+            for blob in img.find_blobs(self.thresholds, pixels_threshold=150, area_threshold=150,
+                                       roi=(1,int(sensor.height()/3),int(sensor.width()),int(2*sensor.height()/3))):
+                img.draw_rectangle(blob.rect())
+
+                if blob.elongation() > 0.5:
+                    img.draw_edges(blob.min_corners(), color=(255, 0, 0))
+                    img.draw_line(blob.major_axis_line(), color=(0, 255, 0))
+                    img.draw_line(blob.minor_axis_line(), color=(0, 0, 255))
+                img.draw_cross(blob.cx(), blob.cy())
+                img.draw_keypoints(
+                    [(blob.cx(), blob.cy(), int(math.degrees(blob.rotation())))], size=20
+                )
+            print('finding blobs of color', color_id)
+            found_mid = self.cam.find_blob(blobs, color_id)
             obstacle_detected = self.cam.find_blob(blobs, self.obstacle_id)
 
+            # If obstacle not there, follow lane
+            if obstacle_detected is None:
+                if found_mid is not None:
+                    print('found lane')
+#                    self.servo.set_angle(0)
+                    pixel_error = blobs[found_mid].cx() - self.cam.w_centre
+                    steering = pixel_error / self.cam.w_centre
+                    drive = steering / self.drive_factor
+                    print('steering', steering, 'drive:', bias - drive)
+                    if steering < self.adherance and steering > -self.adherance:
+                        self.drive(speed, bias)
+                    else:
+                        self.drive(speed, bias - drive)
+            # If obstacle, stop
+            if obstacle_detected is not None:
+                print('obstacle detected')
+                distance_pixel = blobs[obstacle_detected].y() + blobs[obstacle_detected].h()
+                distance_to_obstacle = 1180000 * (distance_pixel ** (-1.920711))
+                print('distance', distance_to_obstacle)
+                if distance_to_obstacle <= distance_threshold:
+                    print('STOP')
+                    self.drive(0, 0)  # Stop the robot
+                    break
+                else:
+                    print('closerrrr')
+#                    self.servo.set_angle(0)
+                    pixel_error = blobs[found_mid].cx() - self.cam.w_centre
+                    steering = pixel_error / self.cam.w_centre
+                    drive = steering / self.drive_factor
+                    print('steering', steering, 'drive:', bias - drive)
+                    if steering < self.adherance and steering > -self.adherance:
+                        self.drive(speed, bias)
+                    else:
+                        self.drive(speed, bias - drive)
 
-
+        self.servo.soft_reset()
         return
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+#        time.sleep_ms(1000)
+#        print('starting stage 3')
+
+#        # Find the initial lane to follow
+#        while True:
+#            blobs, img = self.cam.get_blobs_bottom()
+#            for blob in img.find_blobs(self.thresholds, pixels_threshold=150, area_threshold=150,
+#                                       roi=(1,int(sensor.height()/3),int(sensor.width()),int(2*sensor.height()/3))):
+#                img.draw_rectangle(blob.rect())
+
+#                if blob.elongation() > 0.5:
+#                    img.draw_edges(blob.min_corners(), color=(255, 0, 0))
+#                    img.draw_line(blob.major_axis_line(), color=(0, 255, 0))
+#                    img.draw_line(blob.minor_axis_line(), color=(0, 0, 255))
+#                img.draw_cross(blob.cx(), blob.cy())
+#                img.draw_keypoints(
+#                    [(blob.cx(), blob.cy(), int(math.degrees(blob.rotation())))], size=20
+#                )
+#            biggest_blob = self.cam.get_biggest_blob(blobs)
+#            biggest_blob_color = biggest_blob[8]
+
+#            print('check color')
+
+#            if biggest_blob_color == pow(2, 0):
+#                color_id = self.mid_line_id
+#                break
+
+#        print('lane color detected', color_id)
+
+#        # Following the lane
+#        while True:
+#            blobs, img = self.cam.get_blobs_bottom()
+#            for blob in img.find_blobs(self.thresholds, pixels_threshold=150, area_threshold=150,
+#                                       roi=(1,int(sensor.height()/3),int(sensor.width()),int(2*sensor.height()/3))):
+#                img.draw_rectangle(blob.rect())
+
+#                if blob.elongation() > 0.5:
+#                    img.draw_edges(blob.min_corners(), color=(255, 0, 0))
+#                    img.draw_line(blob.major_axis_line(), color=(0, 255, 0))
+#                    img.draw_line(blob.minor_axis_line(), color=(0, 0, 255))
+#                img.draw_cross(blob.cx(), blob.cy())
+#                img.draw_keypoints(
+#                    [(blob.cx(), blob.cy(), int(math.degrees(blob.rotation())))], size=20
+#                )
+#            print('finding blobs of color', color_id)
+#            found_mid = self.cam.find_blob(blobs, color_id)
+#            obstacle_detected = self.cam.find_blob(blobs, self.obstacle_id)
+
+#            # If obstacle not there, follow lane
+#            if obstacle_detected is None:
+#                if found_mid is not None:
+#                    print('found lane')
+#                    self.servo.set_angle(0)
+#                    pixel_error = blobs[found_mid].cx() - self.cam.w_centre
+#                    steering = pixel_error / self.cam.w_centre
+#                    drive = steering / self.drive_factor
+#                    print('steering', steering, 'drive:', bias - drive)
+#                    if steering < self.adherance and steering > -self.adherance:
+#                        self.drive(speed, bias)
+#                    else:
+#                        self.drive(speed, bias - drive)
+#            # If obstacle, stop
+#            if obstacle_detected is not None:
+#                print('obstacle detected')
+#                distance_pixel = blobs[obstacle_detected].y() + blobs[obstacle_detected].h()
+#                distance_to_obstacle = 1000000 * (distance_pixel ** (-1.921))
+#                print('distance', distance_to_obstacle)
+#                if distance_to_obstacle <= distance_threshold:
+#                    print('STOP')
+#                    self.drive(0, 0)  # Stop the robot
+#                    break
+#                else:
+#                    print('closerrrr')
+#                    self.drive(speed / 2, bias)
+#        self.servo.soft_reset()
+#        return
 
 
     def stage4(self, speed: float, bias: float) -> None:

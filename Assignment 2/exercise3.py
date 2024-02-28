@@ -5,17 +5,23 @@ from servos import *
 led = LED("LED_BLUE")
 led.on()
 
-thresholds = [(41, 58, 16, 62, -15, 48), #red
-             (41, 75, -25, -6, 33, 57), #yellow
-             (31, 60, -21, 3, -45, -9), #blue
-             (23, 61, -43, -20, -3, 24), #green
+thresholds = [
+              (32, 72, 24, 56, 10, 40), #red
+             (56, 84, -22, -5, 37, 65), #yellow
+#             (44, 66, -51, 20, -59, -5), #blue
+#             (24, 46, -34, -14, -1, 29), #green
              ]
 
 robot = Robot(thresholds, gain = 10)
 servo = Servo()
+speed = 0.1
+bias = 0.2
 
 try:
-    robot.stage2(0.1, 0.25)
+    servo.set_angle(0)
+#    robot.stage1(speed, bias)
+#    robot.stage2(speed, bias)
+    robot.stage3(speed, bias, 15)
 
 except Exception as e:
     print('An error occurred:', e)
