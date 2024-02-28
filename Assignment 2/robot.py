@@ -2,13 +2,15 @@ from servos import *
 from camera import *
 from pid_control import PID
 import time
+import math
+import sensor
 
 class Robot(object):
     """
     A class to manage the functions of a robot for driving and tracking purposes using a camera and servos.
     """
 
-    def __init__(self, thresholds, gain = 25, p=0.18, i=0, d=0, imax=0.01):
+    def __init__(self, thresholds, gain = 10, p=0.18, i=0, d=0, imax=0.01):
         """
         Initializes the Robot object with given PID parameters.
 
@@ -42,26 +44,54 @@ class Robot(object):
             speed (float): Speed to set the servos to (-1~1)
             bias (float): Just an example of other arguments you can add to the function!
         """
-        self.servo.soft_reset()
+        time.sleep_ms(1000)
+        print('starting stage 1')
+        frames = 0
 
-        blobs, img = self.cam.get_blobs_bottom()
-        found_mid = self.cam.find_blob(blobs, self.mid_line_id)
-        found_l = self.cam.find_blob(blobs, self.l_line_id)
-        found_r = self.cam.find_blob(blobs, self.r_line_id)
-
+        # Find the initial lane to follow
         while True:
-            if found_mid:
-                """
-                ###Level 1### Please insert code here to compute the center line angular error as derived from the pixel error, then use this value
-                to come up with a steering command to send to self.drive(speed, steering) function. Remember the steering takes values between -1 and 1.
+            blobs, img = self.cam.get_blobs_bottom()
+            biggest_blob = self.cam.get_biggest_blob(blobs)
+            biggest_blob_color = biggest_blob[8]
 
+            print('check color')
 
+            if biggest_blob_color == pow(2, 0):
+                color_id = self.mid_line_id
+                break
+            elif biggest_blob_color == pow(2, 2):
+                color_id = self.l_line_id
+                break
+            elif biggest_blob_color == pow(2, 3):
+                color_id = self.r_line_id
+                break
 
-                ###Level 2### Please insert code here to follow the lane when the red line is obstructed. How would you make sure the pixyBot still stays on the road?
-                Come up with a steering command to send to self.drive(speed, steering) function
-                """
+        print('color detected', color_id)
+
+        # Following the lane
+        while True:
+            blobs, img = self.cam.get_blobs_bottom()
+            print('finding blobs of color', color_id)
+            found_mid = self.cam.find_blob(blobs, color_id)
+
+            if found_mid is not None:
+
+                # Level 1
+                print('found mid')
+                self.servo.set_angle(0)
+                pixel_error = blobs[found_mid].cx() - self.cam.w_centre
+                steering = pixel_error / self.cam.w_centre
+                steering = steering / 2
+                print('steering', steering, 'drive:', steering + bias)
+                if steering < 0.2 and steering > 0:
+                    self.drive(speed, bias)
+                else:
+                    self.drive(speed, bias - steering)
             else:
-                self.drive(0, 0)
+                frames += 1
+                if frames > 5:
+                    self.drive(0, 0)
+                    break
 
         self.servo.soft_reset()
         return
@@ -75,7 +105,56 @@ class Robot(object):
             speed (float): Speed to set the servos to (-1~1)
             bias (float): Just an example of other arguments you can add to the function!
         """
-        self.servo.soft_reset()
+
+        time.sleep_ms(1000)
+        print('starting stage 2')
+        frames = 0
+
+        # Find the initial lane to follow
+        while True:
+            blobs, img = self.cam.get_blobs_bottom()
+            biggest_blob = self.cam.get_biggest_blob(blobs)
+            biggest_blob_color = biggest_blob[8]
+
+            print('check color')
+
+            if biggest_blob_color == pow(2, 0):
+                color_id = self.mid_line_id
+                break
+            elif biggest_blob_color == pow(2, 2):
+                color_id = self.l_line_id
+                break
+            elif biggest_blob_color == pow(2, 3):
+                color_id = self.r_line_id
+                break
+
+        print('lane color detected', color_id)
+
+        # Following the lane
+        while True:
+            blobs, img = self.cam.get_blobs_bottom()
+            print('finding blobs of color', color_id)
+            found_mid = self.cam.find_blob(blobs, color_id)
+            obstacle_detected = self.cam.find_blob(blobs, self.obstacle_id)
+
+            # If obstacle not there, follow lane
+            if obstacle_detected is None:
+                if found_mid is not None:
+                    print('following lane')
+                    self.servo.set_angle(0)
+                    pixel_error = blobs[found_mid].cx() - self.cam.w_centre
+                    steering = pixel_error / self.cam.w_centre
+                    steering = steering / 2
+                    print('steering', steering, 'drive:', steering + bias)
+                    if steering < 0.2 and steering > 0:
+                        self.drive(speed, bias)
+                    else:
+                        self.drive(speed, bias - steering)
+            # If obstacle, stop
+            else:
+                print('OBSTACLE!!')
+                self.drive(0, 0)
+                break
         return
 
 
@@ -88,6 +167,13 @@ class Robot(object):
             bias (float): Just an example of other arguments you can add to the function!
         """
         self.servo.soft_reset()
+
+        while True:
+            blobs, img = self.cam.get_blobs_bottom()
+            obstacle_detected = self.cam.find_blob(blobs, self.obstacle_id)
+
+
+
         return
 
 
@@ -164,6 +250,7 @@ class Robot(object):
 
             # Set new angle
             self.servo.set_angle(new_pan_angle)
+            print(new_pan_angle, self.servo.pan_pos, limit)
 
             # Check blobs to see if the line is found
             blobs, _ = self.cam.get_blobs_bottom()
@@ -172,8 +259,12 @@ class Robot(object):
                 break
 
             # Check if limits are reached and reverse direction
-            if self.servo.pan_pos >= limit or self.servo.pan_pos <= -limit:
-                self.scan_direction *= -1
+            if self.servo.pan_pos >= limit:
+                print('reverse')
+                self.scan_direction = -1
+            if self.servo.pan_pos <= -limit:
+                print('reverse')
+                self.scan_direction = 1
 
 
     def debug(self, threshold_idx: int) -> None:

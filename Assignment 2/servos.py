@@ -183,29 +183,29 @@ if __name__ == "__main__":
     servo = Servo()
     servo.soft_reset()
 
-    angle = 0
-    dir = 1
-    n = 0
+#    angle = 0
+#    dir = 1
+#    n = 0
 
-    while True:
-        servo.set_angle(angle)
+#    while True:
+#        servo.set_angle(angle)
 
-        angle += dir
+#        angle += dir
 
-        if angle > 29:
-            dir = -1
-            n += 1
-        if angle < -29:
-            dir = 1
-            n += 1
-        if n > 4:
-            break
+#        if angle > 29:
+#            dir = -1
+#            n += 1
+#        if angle < -29:
+#            dir = 1
+#            n += 1
+#        if n > 4:
+#            break
 
-        time.sleep_ms(20)
+#        time.sleep_ms(20)
 
     servo.set_angle(0)
-    servo.set_differential_drive(0.1, 0)
-    time.sleep_ms(1000)
+    servo.set_differential_drive(0.1, 0.3)
+    time.sleep_ms(2000)
 
 #    servo.set_differential_drive(0.5, 0)
 #    time.sleep_ms(1000)
