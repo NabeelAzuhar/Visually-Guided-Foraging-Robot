@@ -23,7 +23,7 @@ class Puzzle(object):
         self.PID = PID(p, i, d, imax)
         self.detector = Detector(thresholds, gain)
         self.loc = Localization(self.detector.cam.w_centre, self.servo.pan_pos)
-        
+
         self.scan_direction = 1
         self.servo.set_angle(0)
 
@@ -48,7 +48,7 @@ class Puzzle(object):
                     break
         self.servo.soft_reset()
 
-    # turn a specific angle to move diag direction, in most cases 45 degree, 
+    # turn a specific angle to move diag direction, in most cases 45 degree,
     # considering using sun direction as feedbacks
     def turn_angle(self, speed, bias, angle):
         steering = bias + angle * 0.001
@@ -104,7 +104,7 @@ class Puzzle(object):
 
 
         self.servo.soft_reset()
-    
+
     def drive(self, drive: float, steering: float) -> None:
         """
         Differential drive function for the robot.
