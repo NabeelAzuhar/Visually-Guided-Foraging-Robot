@@ -144,6 +144,31 @@ class Cam(object):
 
         return None
 
+    def filter_blobs(self, blobs, threshold_idxs: list):
+        """
+        Finds the blobs of the right colours that were detected using a specified threshold
+
+        Args:
+            blobs (list): List of detected blobs.
+            threshold_idx (int): Index along self.thresholds.
+
+        Returns:
+            filtered_blobs (int): Blobs of the right colour that were detected using self.thresholds(threshold_idx)
+        """
+        colours = self.get_blob_colours(blobs)
+
+        powered_idxs = []
+        for idx in threshold_idxs:
+            powered_idxs.append(pow(2, idx))
+
+
+        filtered_blobs = []
+        for found_idx, colour in enumerate(colours):
+            if colour in powered_idxs:
+                filtered_blobs.append(blobs[found_idx])
+
+        return filtered_blobs
+
 
 if __name__ == "__main__":
     #
@@ -167,10 +192,10 @@ if __name__ == "__main__":
 
     # Color Tracking Thresholds (L Min, L Max, A Min, A Max, B Min, B Max)
     # The below thresholds track in general red/green things. You may wish to tune them...
-    thresholds = [(25, 40, 37, 55, 29, 49), #red
+    thresholds = [(23, 75, 32, -14, -10, -51), #blue
+                  (44, 12, 63, 32, 55, 15), #red
+                  (37, 58, -54, -30, 21, 49), #green
                  (41, 75, -25, -6, 33, 57), #sun
-                 (35, 49, -19, 23, -51, -15), #blue
-                 (50, 74, -40, -20, 22, 54), #green
                  ]
 
 
