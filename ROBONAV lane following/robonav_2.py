@@ -269,7 +269,7 @@ class Robonav(object):
                     print("not correct blob")
                     frames += 1
                     print(frames)
-                    if frames > 3:
+                    if frames > 2:
                         print("stopping")
                         self.servo.soft_reset_2()
                         break
@@ -311,8 +311,8 @@ if __name__ == "__main__":
                  ]
 
     gain = 25
-    speed = 0.15
-    bias = -0.2
+    speed = 0.12
+    bias = -0.4
     robonav = Robonav(thresholds, gain, speed, bias)
     #robonav.servo.set_angle(10)
     #print(robonav.servo.pan_pos)
@@ -326,37 +326,48 @@ if __name__ == "__main__":
 #    time.sleep_ms(1000)
 #    robonav.servo.soft_reset_2()
 
-
-
     while True:
         green_blobs, img = robonav.cam.get_blobs_bottom_thresh(2)
 
-        if green_blobs is not None:
+        if green_blobs:
             print("found green")
             robonav.track_n_rotate(2)
             robonav.move_to_blob(2, speed, bias)
+            break
+
         else:
             blue_blobs, img = robonav.cam.get_blobs_bottom_thresh(0)
-            if blue_blobs is not None:
+            if blue_blobs:
                 print("found blue")
                 robonav.track_n_rotate(0)
                 robonav.move_to_blob(0, speed, bias)
-            else:
-                print("blue or green not found")
-                break
 
-#        else:
-#            robonav.scan_for_blob_good(2, 2, 44)
-#            green_blobs, img = robonav.cam.get_blobs_bottom_thresh(2)
-#            if green_blobs is not None:
-#                print("here")
-#                robonav.track_n_rotate(2)
-#                robonav.move_to_blob(2, speed, bias)
-#                break
-#            else:
-#                robonav.scan_for_blob_good(0, 2, 44)
-#                robonav.rotate(0)
-#                robonav.move_to_blob(0, speed, bias)
+            else:
+                robonav.scan_for_blob_good(2, 2, 44)
+                green_blobs, img = robonav.cam.get_blobs_bottom_thresh(2)
+                if green_blobs:
+                    print("found green")
+                    robonav.track_n_rotate(2)
+                    robonav.move_to_blob(2, speed, bias)
+                    break
+                else:
+                    robonav.scan_for_blob_good(0, 2, 44)
+                    blue_blobs, img = robonav.cam.get_blobs_bottom_thresh(0)
+                    if blue_blobs:
+                        print("found blue")
+                        robonav.track_n_rotate(0)
+                        robonav.move_to_blob(0, speed, bias)
+                    else:
+                        robonav.rotate(2)
+                        green_blobs, img = robonav.cam.get_blobs_bottom_thresh(2)
+                        if green_blobs:
+                            robonav.move_to_blob(2, speed, bias)
+                            break
+                        else:
+                            robonav.rotate(0)
+                            blue_blobs, img = robonav.cam.get_blobs_bottom_thresh(0)
+                            if blue_blobs:
+                                robonav.move_to_blob(0, speed, bias)
 
 
 
