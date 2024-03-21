@@ -13,7 +13,7 @@ class Servo:
         """
         # Servo tuning coefficients; EDIT these values as required.
         self.pan_angle_corr = 0
-        self.left_zero = 0.15
+        self.left_zero = 0.05 #0.15
         self.right_zero = -0.1
 
         # Define servo pin IDs for the servo shield.
@@ -207,15 +207,23 @@ if __name__ == "__main__":
 #        time.sleep_ms(200)
 
     # Check front movements
-    servo.set_angle(0)
-    servo.set_differential_drive(0.5, -0.3)
-    time.sleep_ms(2000)
-    servo.set_differential_drive(0, 0)
+#    servo.set_angle(0)
+#    servo.set_differential_drive(0.12, -0.1)
+#    time.sleep_ms(1000)
+#    servo.set_differential_drive(0, 0)
 
 #    # Check turning movements
-#    servo.set_speed(0.1, -0.1)  # Turn right
-#    time.sleep_ms(1000)
-#    servo.set_speed(-0.1, 0.1)  # Turn left
-#    time.sleep_ms(1000)
+    servo.set_speed(0.2, -0.2)  # Turn right
+    time.sleep_ms(1000)
+    servo.set_speed(0, 0)
+    time.sleep_ms(1000)
+    servo.set_speed(-0.2, 0.2)  # Turn left
+    time.sleep_ms(1000)
+    servo.set_speed(0, 0)
+    time.sleep_ms(1000)
 
-    servo.soft_reset()
+#    # Check wheel servos
+#    servo.set_speed(0, 0)
+    time.sleep_ms(1000)
+
+   # servo.soft_reset()

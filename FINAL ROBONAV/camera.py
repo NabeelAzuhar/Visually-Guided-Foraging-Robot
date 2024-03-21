@@ -68,6 +68,24 @@ class Cam(object):
         return blobs, img
 
 
+    def get_blobs_bottom_half(self) -> tuple:
+        """
+        Capture an image and detect colour blobs based on predefined thresholds.
+        Region of interest is set to the bottom 2/3 of the image.
+
+        Returns:
+            blobs (list): List of detected blobs.
+            img (image): Captured image used to find blobs.
+        """
+        img = sensor.snapshot()
+
+        blobs = img.find_blobs(self.thresholds,pixels_threshold=150,area_threshold=150,
+                               roi=(1,int(sensor.height()/2),
+                                    int(sensor.width()),int(2*sensor.height()/4)))
+
+        return blobs, img
+
+
     def get_biggest_blob(self, blobs):
         """
         Identify and return the largest blob from a list of detected blobs.
@@ -128,6 +146,32 @@ class Cam(object):
         return None
 
 
+    def filter_blobs(self, blobs, threshold_idxs: list):
+        """
+        Finds the blobs of the right colours that were detected using a specified threshold
+
+        Args:
+            blobs (list): List of detected blobs.
+            threshold_idx (int): Index along self.thresholds.
+
+        Returns:
+            filtered_blobs (int): Blobs of the right colour that were detected using self.thresholds(threshold_idx)
+        """
+        colours = self.get_blob_colours(blobs)
+
+        powered_idxs = []
+        for idx in threshold_idxs:
+            powered_idxs.append(pow(2, idx))
+
+
+        filtered_blobs = []
+        for found_idx, colour in enumerate(colours):
+            if colour in powered_idxs:
+                filtered_blobs.append(blobs[found_idx])
+
+        return filtered_blobs
+
+
 if __name__ == "__main__":
     #
     # Blob threshold tester
@@ -144,17 +188,18 @@ if __name__ == "__main__":
     sensor.skip_frames(time=2000)
     sensor.set_auto_whitebal(False)  # must be turned off for colour tracking
 
-    # Change gain here to work with the lighting conditions you have
-    sensor.set_auto_gain(False, gain_db = 10)  # must be turned off for color tracking
-    #
-
     # Color Tracking Thresholds (L Min, L Max, A Min, A Max, B Min, B Max)
     # The below thresholds track in general red/green things. You may wish to tune them...
-    thresholds = [(41, 58, 16, 62, -15, 48), #red
-                 (41, 75, -25, -6, 33, 57), #yellow
-                 (31, 60, -21, 3, -45, -9), #blue
-                 (23, 61, -43, -20, -3, 24), #green
+    thresholds = [
+                 (33, 48, -10, 6, -24, -6), #blue
+                 (11, 26, 13, 48, 2, 35), #red
+                 (33, 50, -30, -17, 3, 31), #green
                  ]
+    gain = 26
+
+    # Change gain here to work with the lighting conditions you have
+    sensor.set_auto_gain(False, gain_db = 24)  # must be turned off for color tracking
+    camera = Cam(thresholds, gain)
 
 
     # Only blobs that with more pixels than "pixel_threshold" and more area than "area_threshold" are
@@ -162,6 +207,11 @@ if __name__ == "__main__":
     # blobs (x, y, width, height). Currently set to look for blobs in the bottom 2/3 of the image.
     while True:
         img = sensor.snapshot()
+
+        biggest_blob = camera.get_biggest_blob(img.find_blobs(thresholds, pixels_threshold=150, area_threshold=150,
+            roi=(1,int(sensor.height()/3),int(sensor.width()),int(2*sensor.height()/3))))
+        print(biggest_blob)
+
         for blob in img.find_blobs(thresholds, pixels_threshold=150, area_threshold=150,
                                    roi=(1,int(sensor.height()/3),int(sensor.width()),int(2*sensor.height()/3))):
             img.draw_rectangle(blob.rect())
@@ -174,3 +224,4 @@ if __name__ == "__main__":
             img.draw_keypoints(
                 [(blob.cx(), blob.cy(), int(math.degrees(blob.rotation())))], size=20
             )
+

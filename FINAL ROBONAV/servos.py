@@ -13,8 +13,8 @@ class Servo:
         """
         # Servo tuning coefficients; EDIT these values as required.
         self.pan_angle_corr = 0
-        self.left_zero = 0.15
-        self.right_zero = -0.1
+        self.left_zero = 0
+        self.right_zero = 0
 
         # Define servo pin IDs for the servo shield.
         self.pan_id = 7
@@ -179,6 +179,21 @@ class Servo:
         print("___Running Code___")
 
 
+    def softer_reset(self) -> None:
+        """
+        Method to reset the servos to default and print a delay prompt.
+        """
+        # Reset all servo shield pins
+        for i in range(0, 7, 1):
+            self.pca9685.duty(i, 0)
+
+        # Reset pan to centre
+        self.set_angle(0)
+
+        # Delay
+        time.sleep_ms(100)
+
+
 if __name__ == "__main__":
     servo = Servo()
     servo.soft_reset()
@@ -187,17 +202,27 @@ if __name__ == "__main__":
     for i in range(-30, 31, 5):
         servo.set_angle(i)
         time.sleep_ms(200)
-    
+
     # Check front movements
-    servo.set_angle(0)
-    servo.set_differential_drive(0.2, 0)
-    time.sleep_ms(1000)
-    servo.set_differential_drive(0, 0)
+#    servo.set_angle(0)
+#    servo.set_differential_drive(0.2, -0.1)
+#    time.sleep_ms(1000)
+#    servo.set_differential_drive(0, 0)
 
     # Check turning movements
-    servo.set_speed(0.1, -0.1)  # Turn right
-    time.sleep_ms(1000)
-    servo.set_speed(-0.1, 0.1)  # Turn left
-    time.sleep_ms(1000)
+#    servo.set_speed(0.1, -0.1)  # Turn right
+#    time.sleep_ms(1000)
+#    servo.set_speed(-0.1, 0.1)  # Turn left
+#    time.sleep_ms(1000)
+
+    # Test set_speed
+#    servo.set_speed(0, 0)
+#    time.sleep_ms(3000)
+    print('turn right')
+    servo.set_speed(0.1, -0.1)
+    time.sleep_ms(500)
+    print('turn left')
+    servo.set_speed(-0.1, 0.1)
+    time.sleep_ms(500)
 
     servo.soft_reset()
