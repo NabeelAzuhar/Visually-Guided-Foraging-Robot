@@ -23,7 +23,7 @@ class Robonav(object):
         self.speed = speed
         self.bias = bias
         self.gain = gain
-        self.cy_threshold = 200
+        self.cy_threshold = 300
 
         self.PID = PID(p, i, d, imax)
 
@@ -55,6 +55,8 @@ class Robonav(object):
 
         count = 0  # Counts number of times direction is changed
 
+        # Check green
+        print('Scanning for green')
         while True:
 
             # Draw rectangles
@@ -82,11 +84,12 @@ class Robonav(object):
             blobs, _ = self.cam.get_blobs_bottom()
             current = 0
             closest_blob = None
-            for blob in blobs:
-                if (blob[8] == pow(2, blue_id) or blob[8] == pow(2, green_id)) and blob.cy() > self.cy_threshold:
-                    if blob.cy() > current:
-                        closest_blob = blob
-                        current = blob.cy()
+            if blobs != []:
+                for blob in blobs:
+                    if blob[8] == pow(2, green_id) and blob.cy() > self.cy_threshold:
+                        if blob.cy() > current:
+                            closest_blob = blob
+                            current = blob.cy()
 
             # Check if biggest blob was found.
             if closest_blob is not None:
@@ -115,7 +118,75 @@ class Robonav(object):
             # If looked left and right and didn't find anything, stop scanning
             if count > 1:
                 self.servo.set_angle(0)
+                count = 0
                 break
+
+        count = 0
+
+        # Check blue
+        print('Scanning for blue')
+        while True:
+
+                # Draw rectangles
+                img = sensor.snapshot()
+                for blob in img.find_blobs(thresholds, pixels_threshold=150, area_threshold=150,
+                                        roi=(0,int(sensor.height()/3),int(sensor.width()),int(2*sensor.height()/3))):
+                    img.draw_rectangle(blob.rect())
+
+                    if blob.elongation() > 0.5:
+                        img.draw_edges(blob.min_corners(), color=(255, 0, 0))
+                        img.draw_line(blob.major_axis_line(), color=(0, 255, 0))
+                        img.draw_line(blob.minor_axis_line(), color=(0, 0, 255))
+                    img.draw_cross(blob.cx(), blob.cy())
+                    img.draw_keypoints(
+                        [(blob.cx(), blob.cy(), int(math.degrees(blob.rotation())))], size=20
+                    )
+
+                # Update pan angle based on the scan direction and speed (left first)
+                new_pan_angle = self.servo.pan_pos + (self.scan_direction * step)
+
+                # Set new angle
+                self.servo.set_angle(new_pan_angle)
+
+                # Check blobs to see if the line is found
+                blobs, _ = self.cam.get_blobs_bottom()
+                current = 0
+                closest_blob = None
+                if blobs != []:
+                    for blob in blobs:
+                        if blob[8] == pow(2, blue_id) and blob.cy() > self.cy_threshold:
+                            if blob.cy() > current:
+                                closest_blob = blob
+                                current = blob.cy()
+
+                # Check if biggest blob was found.
+                if closest_blob is not None:
+                    print("blob cy acceptable")
+                    return 1
+
+                # Check if limits are reached and reverse direction
+                # Reached left limit
+                if self.servo.pan_pos >= limit:  # left
+                    self.scan_direction *= -1
+                    count += 1
+                    # Return 2 if nothing is seen when turned left (seeing edge of grid)
+                    blobs, _ = self.cam.get_blobs_bottom()
+                    if blobs == []:
+                        self.servo.set_angle(0)
+                        return 2
+                # Reached right limit
+                elif self.servo.pan_pos <= -limit:  # right
+                    self.scan_direction *= -1
+                    count += 1
+                    # Return 3 if nothing is seen when turned right (seeing edge of grid)
+                    blobs, _ = self.cam.get_blobs_bottom()
+                    if blobs == []:
+                        self.servo.set_angle(0)
+                        return 3
+                # If looked left and right and didn't find anything, stop scanning
+                if count > 1:
+                    self.servo.set_angle(0)
+                    break
 
 
     def rotate_2(self, blue_id, green_id, direction):
@@ -254,8 +325,15 @@ class Robonav(object):
         while True:
 
             # Find biggest blob of that colour
+            all_blobs, _ = self.cam.get_blobs_bottom()
             blobs, img = self.cam.get_blobs_bottom_thresh(thresh)
             biggest_blob = self.cam.get_biggest_blob(blobs)
+            all_biggest_blob = self.cam.get_biggest_blob(all_blobs)
+
+            if all_biggest_blob is not None:
+                if thresh == self.blue_id and all_biggest_blob[8] == pow(2, green_id):
+                    print('found green while following blue')
+                    break
 
             # If no blob found and looking for blue, stop and exit function
             if biggest_blob is None and thresh == blue_id:
@@ -327,13 +405,13 @@ if __name__ == "__main__":
     import camera
 
     thresholds = [
-                  (25, 54, -20, 10, -32, -10), #blue
-                  (19, 37, 24, 54, 16, 45), #red
-                  (30, 54, -32, -15, -1, 27), #green
+                  (15, 43, -21, 20, -37, -5), #blue
+                  (17, 33, 25, 55, 4, 44), #red
+                  (22, 59, -58, -22, -1, 44), #green
     #                  (67, 82, 19, 62, -7, 39), #sun
                  ]
 
-    gain = 3
+    gain = 5
     speed = 0.12
     bias = 0
     direction = 1 # 1:R, -1:L
@@ -370,6 +448,12 @@ if __name__ == "__main__":
                 robonav.track_n_rotate(green_id)
                 print('MOVE TO BLOB')
                 robonav.move_to_blob(green_id, speed, bias)
+                green_blobs, img = robonav.cam.get_blobs_bottom_thresh(green_id)
+                if green_blobs:
+                    print('TRACK AND ROTATE GREEN AGAIN')
+                    robonav.track_n_rotate(green_id)
+                    print('MOVE TO GREEN AGAIN')
+                    robonav.move_to_blob(green_id, speed, bias)
                 break  # Reached green so end function
 
             # If no green, look for blue straight ahead
@@ -390,25 +474,26 @@ if __name__ == "__main__":
 
                     # If didnt find anything (it's in a corner), just rotate robot
                     if turn_param is None:
-                        print('ROTATE 2')
+                        print('ROTATE 2 - nothing was seen')
                         robonav.rotate_2(blue_id, green_id, direction)
                         continue
 
                     # Found blue or green marker
                     elif turn_param == 1:
+                        print('start again')
                         continue
 
                     # If edge of grid detected on left, rotate robot right
                     elif turn_param == 2:
                         # turn right
-                        print('ROTATE 2')
+                        print('ROTATE 2 - rotate right')
                         robonav.rotate_2(blue_id, green_id, 1)
                         continue
 
                     # If edge of grid detected on right, rotate robot left
                     elif turn_param == 3:
                         # turn left
-                        print('ROTATE 2')
+                        print('ROTATE 2 - rotate left')
                         robonav.rotate_2(blue_id, green_id, -1)
                         continue
 
