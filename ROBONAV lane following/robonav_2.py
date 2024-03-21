@@ -55,6 +55,11 @@ class Robonav(object):
 
         count = 0  # Counts number of times direction is changed
 
+        Args:
+            threshold_idx (int): Index along self.cam.thresholds to find matching blobs
+            step (int): Number of degrees to pan the servo at each scan step
+            limit (int): Scan oscillates between +-limit degrees
+        """
         while True:
 
             # Draw rectangles
@@ -297,6 +302,8 @@ class Robonav(object):
                     self.servo.set_differential_drive(0, 0)
                     break  # End function
 
+        #self.servo.soft_reset()
+        #return
 
     def track_blob(self, blob) -> None:
         """

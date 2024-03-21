@@ -216,6 +216,8 @@ if __name__ == "__main__":
 
     cam = Cam(thresholds, gain)
 
+    cam = Cam(thresholds, gain)
+
 
     # Only blobs that with more pixels than "pixel_threshold" and more area than "area_threshold" are
     # returned by "find_blobs" below. "roi" sets the region of interest of the image in which to find
